@@ -1,4 +1,4 @@
-profile/
+/profile
 __pycache__/
 *.pyc
 .DS_Store
