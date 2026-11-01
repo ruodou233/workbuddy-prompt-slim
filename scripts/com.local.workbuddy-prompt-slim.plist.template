@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd 模板：监视 WorkBuddy 的 Info.plist，应用更新后自动重放精简配置。
+  这只是模板，没有安装。启用步骤见 README.md「自动重放」一节。
+  把下面三个占位符换成实际路径：
+    __SCRIPT__   scripts/watch-update.sh 的绝对路径
+    __PROFILE__  配置目录（profile/）的绝对路径
+    __HOME__     你的家目录
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.local.workbuddy-prompt-slim</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__SCRIPT__</string>
+  </array>
+
+  <key>WatchPaths</key>
+  <array>
+    <string>/Applications/WorkBuddy.app/Contents/Info.plist</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>WB_SLIM_PROFILE</key>
+    <string>__PROFILE__</string>
+  </dict>
+
+  <!-- 两次触发之间至少隔 60 秒 -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/.workbuddy-slim/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/.workbuddy-slim/logs/launchd.err.log</string>
+</dict>
+</plist>

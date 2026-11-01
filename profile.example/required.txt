@@ -1,0 +1,14 @@
+# 必须仍出现在某个模板/片段里的变量名或 <标签>，一行一项；# 开头为注释。
+# capture 会从当前 .tpl 模板自动生成初始值，下面是格式示例，请按自己保留的内容增删。
+# verify 会检查每一项至少在一处模板、片段或 product.json 的 prompt 里出现。
+
+# 变量名（模板里 {{ 变量 }} 或 {% if 变量 %} 用到的）
+workDir
+isGitRepo
+ResponseLanguage
+WorkingMemoryContent
+UserMemoryContent
+
+# 标签（模板里成对出现的 <标签>）
+<git_access>
+<WorkingMemoryContent>
