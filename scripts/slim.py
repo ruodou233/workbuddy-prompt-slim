@@ -571,6 +571,7 @@ def cmd_apply(args):
     ctx = Ctx(args)
     prof = Profile(args.profile)
     changes, same, missing = plan_apply(ctx, prof)
+    denied = []
     unrev = find_unreviewed(ctx, prof)
     print("应用版本 %s | 配置: 文件 %d, prompt %d, 保留原样 %d" % (ctx.app_version, len(prof.files), len(prof.prompts), len(prof.kept)))
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -598,7 +599,15 @@ def cmd_apply(args):
                     "bundle": str(ctx.bundle), "home": str(ctx.home), "entries": entries}
         (bdir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", "utf-8")
         for ch in changes:
-            write_text(ch.path, ch.new)
+            try:
+                write_text(ch.path, ch.new)
+            except PermissionError:
+                # macOS「App 管理」不允许后台进程改 /Applications 里的应用；跳过，继续写其他位置
+                denied.append(ch)
+                tmp = ch.path.with_name(ch.path.name + ".slim-tmp")
+                if tmp.exists():
+                    tmp.unlink()
+        changes = [ch for ch in changes if ch not in denied]
     print("\n== 已改%s: %d 项（另有 %d 项内容相同，跳过）" % ("（预演）" if args.dry_run else "", len(changes), same))
     spill = [ch for ch in changes if ch.note.startswith("spill/")]
     for ch in changes:
@@ -610,6 +619,11 @@ def cmd_apply(args):
         print("  [prompts] conversation-product-spill/*.json 共 %d 个文件（同名 prompt 同步替换）" % len(spill))
     if changes and not args.dry_run:
         print("  备份: %s" % short(bdir))
+    if denied:
+        print("\n== 没有写入权限: %d 项（备份已做，原文未动）" % len(denied))
+        for ch in denied:
+            print("  - " + ch.note)
+        print("  macOS 不允许当前进程修改 /Applications 里的应用。在有「App 管理」权限的终端或 Agent 会话里重跑 apply 即可。")
     print("\n== 配置里有、当前版本找不到目标: %d 项（被改名或删除？）" % len(missing))
     for k in missing:
         print("  - " + k)
@@ -620,8 +634,8 @@ def cmd_apply(args):
         print("  ... 另有 %d 项，用 scan --profile 查看全部" % (len(unrev) - 60))
     if changes and not args.dry_run:
         print("\n提示: product.json 只在启动时读入内存，请完全退出并重启 WorkBuddy 生效。")
-    print("SUMMARY %s=%d missing=%d unreviewed=%d" % ("would_change" if args.dry_run else "changed", len(changes), len(missing), len(unrev)))
-    return 0
+    print("SUMMARY %s=%d missing=%d unreviewed=%d denied=%d" % ("would_change" if args.dry_run else "changed", len(changes), len(missing), len(unrev), len(denied)))
+    return 3 if denied else 0
 
 
 # --------------------------------------------------------------------------- verify

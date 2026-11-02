@@ -50,10 +50,17 @@ APPLY_RC=$?
 echo "$APPLY_OUT"
 CHANGED="$(printf '%s\n' "$APPLY_OUT" | sed -n 's/^SUMMARY changed=\([0-9]*\).*/\1/p' | tail -1)"
 CHANGED="${CHANGED:-0}"
+DENIED="$(printf '%s\n' "$APPLY_OUT" | sed -n 's/.*denied=\([0-9]*\).*/\1/p' | tail -1)"
+DENIED="${DENIED:-0}"
 
 "$PY" -I "$SLIM" ${EXTRA[@]+"${EXTRA[@]}"} verify --profile "$PROFILE"
 VERIFY_RC=$?
 
+if [ "$DENIED" -gt 0 ]; then
+  # 后台进程没有「App 管理」权限：用户目录那部分已重放，应用包内的要在前台补一次
+  notify "WorkBuddy 已升级：$CHANGED 项已重放，应用包内 $DENIED 项需在终端或 Agent 里重跑 apply（macOS 权限），详见日志"
+  exit 1
+fi
 if [ "$APPLY_RC" -ne 0 ] || [ "$VERIFY_RC" -ne 0 ]; then
   notify "验证失败，看日志 $LOG"
   exit 1
