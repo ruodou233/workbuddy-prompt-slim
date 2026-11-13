@@ -771,24 +771,35 @@ def content_text(c) -> str:
     return ""
 
 
+# 应用内置的小工具子代理：提示词按原样保留（见 kept.txt），用它们的生成抽查会误报原版特征串
+UTILITY_AGENTS = {"contentAnalyzer", "terminalTitleGenerator"}
+
+
 def latest_generation(ctx: Ctx, max_files=40):
-    """在最近的 trace 文件里找最后一次 generation 的输入。返回 dict 或 None。"""
+    """在最近的 trace 文件里找最后一次主会话 generation 的输入（跳过小工具子代理）。返回 dict 或 None。"""
     for p in trace_files(ctx)[:max_files]:
         last = None
+        names, gens = {}, []
         try:
             with open(p, encoding="utf-8", errors="replace") as f:
                 for ln in f:
-                    if '"generation"' not in ln or '"toolInput"' not in ln:
+                    if '"span"' not in ln:
                         continue
                     try:
                         d = json.loads(ln)
                     except ValueError:
                         continue
                     sp = d.get("span") or {}
+                    if sp.get("spanId"):
+                        names[sp["spanId"]] = sp.get("name")
                     if sp.get("name") == "generation" and sp.get("toolInput"):
-                        last = sp
+                        gens.append(sp)
         except OSError:
             continue
+        # 父 span 的结束行可能写在子 span 之后，所以读完整个文件再按父名过滤
+        for sp in gens:
+            if names.get(sp.get("parentId")) not in UTILITY_AGENTS:
+                last = sp
         if last:
             ti = last["toolInput"]
             if not isinstance(ti, str):
