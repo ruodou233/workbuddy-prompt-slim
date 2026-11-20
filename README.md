@@ -53,7 +53,7 @@ python3 $S restore ~/.workbuddy-slim/backups/<时间戳>
 - `scan`：列出所有承载提示词的文本文件和每个 prompt 的字符数；给了 `--profile` 就标出 一致 / 待重放 / 未审 / 保留原样。
 - `capture`：把当前状态存成配置目录（见下）。必留清单 `required.txt` 已存在时不覆盖，保留你的手改。
 - `apply`：内容相同的跳过；要改的先整批备份再写入；最后报告已改、配置里有但当前版本找不到目标的、当前版本有但配置里没有的（未审）。
-- `verify`：① 全部模板和片段试编译（优先用应用自带的 nunjucks，找不到 node 就退化为标签配对检查），并检查 `include` 指向的片段存在；② `required.txt` 每一项都还在；③ 配置与当前安装一致（升级后忘了 `apply` 会在这里露出来）；④ 读 `~/.workbuddy/traces` 里最近一次生成的输入，报告系统消息字符数，检查有没有原版特征串。有问题返回非零退出码。
+- `verify`：① 全部模板和片段试编译（优先用应用自带的 nunjucks，找不到 node 就退化为标签配对检查），并检查 `include` 指向的片段存在；② `required.txt` 每一项都还在；③ 配置与当前安装一致（升级后忘了 `apply` 会在这里露出来）；④ 读 `~/.workbuddy/traces` 里最近一次生成的输入，报告系统消息字符数，在系统消息和第一条 user 消息的 user-context 块（SOUL.md 等身份文件注入在这里）里检查有没有原版特征串。有问题返回非零退出码。
 - `restore`：按备份目录里的 `manifest.json` 把原件放回去，`apply` 新建的文件会被删掉。
 
 ### 配置目录
@@ -75,7 +75,7 @@ profile/
 
 ## 自动重放（模板，未安装）
 
-`scripts/watch-update.sh` 依次跑 `apply`、`verify`，再用 `osascript` 发一条通知（「已重放，请重启 WorkBuddy 生效」或「验证失败，看日志」）。`scripts/com.local.workbuddy-prompt-slim.plist.template` 是对应的 launchd 模板，用 `WatchPaths` 监视 `Info.plist`。仓库里只有模板，不会替你安装。想启用的话：
+`scripts/watch-update.sh` 依次跑 `apply`、`verify`，再用 `osascript` 发一条通知（「已重放，请重启 WorkBuddy 生效」或「验证失败，看日志」）。`scripts/com.local.workbuddy-prompt-slim.plist.template` 是对应的 launchd 模板，用 `WatchPaths` 监视 `Info.plist`（升级）和 `~/.workbuddy/settings.json`（作者实测：应用启动时会把 skillOverrides 改回默认）。仓库里只有模板，不会替你安装。想启用的话：
 
 ```bash
 sed -e "s#__SCRIPT__#$PWD/scripts/watch-update.sh#" \

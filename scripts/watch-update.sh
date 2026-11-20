@@ -1,6 +1,6 @@
 #!/bin/bash
 # WorkBuddy 升级后自动重放精简配置：apply -> verify -> 发一条 macOS 通知。
-# 由 launchd 的 WatchPaths（监视 Info.plist）触发，也可以手动运行。
+# 由 launchd 的 WatchPaths（监视 Info.plist 和 settings.json）触发，也可以手动运行。
 #
 # 环境变量（都有默认值）：
 #   WB_SLIM_PROFILE  配置目录，默认 <skill>/profile

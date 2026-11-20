@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd 模板：监视 WorkBuddy 的 Info.plist，应用更新后自动重放精简配置。
+  launchd 模板：监视 WorkBuddy 的 Info.plist 和 settings.json，应用更新或改写设置后自动重放精简配置。
   这只是模板，没有安装。启用步骤见 README.md「自动重放」一节。
   把下面三个占位符换成实际路径：
     __SCRIPT__   scripts/watch-update.sh 的绝对路径
@@ -22,6 +22,7 @@
   <key>WatchPaths</key>
   <array>
     <string>/Applications/WorkBuddy.app/Contents/Info.plist</string>
+    <string>__HOME__/.workbuddy/settings.json</string>
   </array>
 
   <key>EnvironmentVariables</key>

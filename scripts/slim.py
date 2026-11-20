@@ -771,6 +771,8 @@ def content_text(c) -> str:
     return ""
 
 
+_USER_CTX = re.compile(r'<system-reminder data-role="user-context">.*?</system-reminder>', re.S)
+
 # 应用内置的小工具子代理：提示词按原样保留（见 kept.txt），用它们的生成抽查会误报原版特征串
 UTILITY_AGENTS = {"contentAnalyzer", "terminalTitleGenerator"}
 
@@ -887,9 +889,15 @@ def cmd_verify(args):
         sysmsgs = [m for m in msgs if isinstance(m, dict) and m.get("role") == "system"]
         systext = "\n".join(content_text(m.get("content")) for m in sysmsgs)
         trunc = bool((sp.get("attributes") or {}).get("tracePayloadTruncated"))
+        # 身份文件（SOUL.md 等）不在系统消息里，而是注入在第一条 user 消息的 user-context 块
+        users = [m for m in msgs if isinstance(m, dict) and m.get("role") == "user"]
+        uc = _USER_CTX.search(content_text(users[0].get("content"))) if users else None
+        uctext = uc.group(0) if uc else ""
         if sysmsgs:
-            scope = systext
+            scope = systext + "\n" + uctext
             desc = "系统消息 %d 条，共 %d 字符" % (len(sysmsgs), len(systext))
+            if uctext:
+                desc += "；user-context 块 %d 字符" % len(uctext)
         else:
             scope = ti
             desc = "未能解析出系统消息（trace 输入被截断？），改为扫描整段输入 %d 字符" % len(ti)
@@ -901,6 +909,10 @@ def cmd_verify(args):
             t0 = datetime.datetime.strptime(started[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=datetime.timezone.utc).timestamp()
             newest = max((p.stat().st_mtime for k, p in ctx.file_targets().items()), default=0)
             newest = max(newest, ctx.product_json.stat().st_mtime if ctx.product_json.exists() else 0)
+            for pd in ctx.personal_dirs():
+                for n in PERSONAL_FILES:
+                    if (pd / n).is_file():
+                        newest = max(newest, (pd / n).stat().st_mtime)
             stale = t0 < newest
         except (ValueError, OSError):
             pass
